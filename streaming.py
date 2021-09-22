@@ -22,6 +22,7 @@ def capture_frames(sensor_id=0):
     camera = CameraCapture(sensor_id)
     while True:
         return_key, frame = camera.cap.read()
+        print(f"frame received on camera {sensor_id}")
         if not return_key:
             break
         cv2.imshow(f'Cam {sensor_id}', frame)
