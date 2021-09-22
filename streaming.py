@@ -13,27 +13,23 @@ class CameraCapture:
 
 
 def capture_frames(sensor_id=0):
-
-
     # The magic pipeline to get things to work, I have literally no idea how this works but it captures video from the csi cameras so woo
     #GSTREAMER_PIPELINE = 'nvarguscamerasrc sensor-id=1 ! video/x-raw(memory:NVMM), width=3280, height=2464, format=(string)NV12, framerate=21/1 ! nvvidconv flip-method=0 ! video/x-raw, width=960, height=616, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink wait-on-eos=false max-buffers=1 drop=True'
 
-    camera0 = CameraCapture(sensor_id=0)
-    camera1 = CameraCapture(sensor_id=1)
+    camera = CameraCapture(0)
     while True:
-        return_key0, frame0 = camera0.cap.read()
-        return_key1, frame1 = camera1.cap.read()
-        if not return_key0:
+        return_key, frame = camera.cap.read()
+        if not return_key:
             break
-        cv2.imshow('Cam 0', frame0)
-        cv2.imshow('Cam 1', frame1)
+        cv2.imshow(f'Cam {sensor_id}', frame)
         if cv2.waitKey(1) == 27:
             break
     cv2.destroyAllWindows()
 
 
 def main():
-    capture_frames()
+    capture_frames(0)
+    capture_frames(1)
 
 if __name__=="__main__":
     main()
