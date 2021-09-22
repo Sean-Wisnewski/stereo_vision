@@ -1,6 +1,7 @@
 """
 Code pertinent to streaming from two cameras simultaneously
 """
+import concurrent.futures.thread
 
 import cv2
 import threading
@@ -17,6 +18,7 @@ def capture_frames(sensor_id=0):
     # The magic pipeline to get things to work, I have literally no idea how this works but it captures video from the csi cameras so woo
     #GSTREAMER_PIPELINE = 'nvarguscamerasrc sensor-id=1 ! video/x-raw(memory:NVMM), width=3280, height=2464, format=(string)NV12, framerate=21/1 ! nvvidconv flip-method=0 ! video/x-raw, width=960, height=616, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink wait-on-eos=false max-buffers=1 drop=True'
 
+    print(f"starting camera {sensor_id}")
     camera = CameraCapture(0)
     while True:
         return_key, frame = camera.cap.read()
@@ -29,15 +31,8 @@ def capture_frames(sensor_id=0):
 
 
 def main():
-    cam_0 = threading.Thread(target=capture_frames, args=(0,))
-    cam_1 = threading.Thread(target=capture_frames, args=(1,))
-    cams = []
-    for idx in range(2):
-        cam = threading.Thread(target=capture_frames, args=(idx,))
-        cams.append(cam)
-        cam.start()
-    for idx, cam in enumerate(cams):
-        cam.join()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        executor.map(capture_frames, range(2))
 
 if __name__=="__main__":
     main()
