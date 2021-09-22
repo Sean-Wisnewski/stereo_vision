@@ -6,7 +6,7 @@ import cv2
 
 
 def capture_frames():
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
     while True:
         return_key, frame = cap.read()
