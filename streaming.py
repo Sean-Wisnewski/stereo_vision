@@ -31,8 +31,13 @@ def capture_frames(sensor_id=0):
 def main():
     cam_0 = threading.Thread(target=capture_frames, args=(0,))
     cam_1 = threading.Thread(target=capture_frames, args=(1,))
-    cam_0.start()
-    cam_1.start()
+    cams = []
+    for idx in range(2):
+        cam = threading.Thread(target=capture_frames, args=(idx,))
+        cams.append(cam)
+        cam.start()
+    for idx, cam in enumerate(cams):
+        cam.join()
 
 if __name__=="__main__":
     main()
