@@ -3,6 +3,7 @@ Code pertinent to streaming from two cameras simultaneously
 """
 
 import cv2
+import threading
 
 class CameraCapture:
     def __init__(self, sensor_id):
@@ -28,8 +29,10 @@ def capture_frames(sensor_id=0):
 
 
 def main():
-    capture_frames(0)
-    capture_frames(1)
+    cam_0 = threading.Thread(target=capture_frames, args=(0,))
+    cam_1 = threading.Thread(target=capture_frames, args=(1,))
+    cam_0.start()
+    cam_1.start()
 
 if __name__=="__main__":
     main()
