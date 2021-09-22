@@ -8,7 +8,7 @@ import cv2
 def capture_frames():
     cap = cv2.VideoCapture(0)
 
-    while cap.isOpened():
+    while True:
         return_key, frame = cap.read()
         if not return_key:
             break
