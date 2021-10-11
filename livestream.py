@@ -25,7 +25,9 @@ def capture_frames(sensor_id, calibration_fname):
         if not key:
             break
         cv2.imshow(f"Cam {sensor_id}", frame)
-        undist = cv2.undistort(frame, camera.mtx, camera.dist, None, camera.newcameramtx)
+        h, w = frame.shape[:2]
+        newcameramtx, _ = cv2.getOptimalNewCameraMatrix(camera.mtx, camera.dist, (w,h), 0, (w,h))
+        undist = cv2.undistort(frame, camera.mtx, camera.dist, None, newcameramtx)
         cv2.imshow(f"Cam {sensor_id}(Undistorted)", undist)
         if cv2.waitKey(1) == 27:
             break
@@ -40,7 +42,7 @@ def make_argparser():
 
     return parser
 
-def handle_cam_starting(args, cam_num, calibration_fname):
+def handle_cam_starting(cam_num, calibration_fname):
     if calibration_fname is not None:
         capture_frames(cam_num, calibration_fname)
     else:
@@ -50,9 +52,9 @@ def main():
     parser = make_argparser()
     args = parser.parse_args()
     if args.cam0:
-        handle_cam_starting(args, 0, args.cam0_calibration)
+        handle_cam_starting(0, args.cam0_calibration)
     if args.cam1:
-        handle_cam_starting(args, 1, args.cam1_calibration)
+        handle_cam_starting(1, args.cam1_calibration)
 
     test = 5
 if __name__=="__main__":
