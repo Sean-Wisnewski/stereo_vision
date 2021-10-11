@@ -51,13 +51,15 @@ def calibrate_camera(imgs, objp : np.ndarray, objpts : list, imgpts : list, inpu
 
             # Draw and optinally display the corners
             cv2.drawChessboardCorners(img, input_shape, corners_refined, ret)
-            #cv2.imshow('Corners', img)
-            #cv2.waitKey(1)
+            cv2.imshow('Corners', img)
+            cv2.waitKey(1)
     # read the first image for shape
     img = cv2.imread(imgs[0])
+    h, w = img.shape[:2]
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpts, imgpts, gray.shape[::-1], None, None)
-    return mtx, dist
+    newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 0, (w,h))
+    return mtx, dist, newcameramtx
 
 
 def main():
@@ -67,9 +69,9 @@ def main():
     input_shape = (args.nrows, args.ncols)
     objp, objpts, imgpts = make_arrays(input_shape)
     imgs = read_all_images(args.calibration_dir)
-    mtx, dist = calibrate_camera(imgs, objp, objpts, imgpts, input_shape)
+    mtx, dist, newcameramtx = calibrate_camera(imgs, objp, objpts, imgpts, input_shape)
     if args.output_file is not None:
-        np.savez(args.output_file, mtx=mtx, dist=dist)
+        np.savez(args.output_file, mtx=mtx, dist=dist, newcameramtx=newcameramtx)
 
 
 
