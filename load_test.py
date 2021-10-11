@@ -10,7 +10,7 @@ with np.load(fname) as data:
     print(dist)
 
     # Just a test
-    img = cv2.imread("./calibration_images/close_cam1/image0000.jpg")
+    img = cv2.imread("./calibration_images/close_cam1/image0001.jpg")
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     h, w = img.shape[:2]
     # all the docs say to use alpha=1. This is a terrible idea, as you will
