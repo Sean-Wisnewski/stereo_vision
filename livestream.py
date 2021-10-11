@@ -42,7 +42,7 @@ def make_argparser():
 
 def handle_cam_starting(args, cam_num, calibration_fname):
     if calibration_fname is not None:
-        print("cam")
+        capture_frames(cam_num, calibration_fname)
     else:
         sys.stderr.write(f"Failed to start cam{cam_num}: no calibration file provided\n")
 
