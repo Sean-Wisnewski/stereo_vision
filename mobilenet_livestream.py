@@ -5,6 +5,26 @@ import matplotlib.pyplot as plt
 import tensorflow_hub as hub
 import cv2
 
+
+class NanoCameraCapture:
+    def __init__(self, sensor_id, calibration_fname=None):
+        GSTREAMER_PIPELINE = f'nvarguscamerasrc sensor-id={sensor_id} ! video/x-raw(memory:NVMM), width=1920, height=1080, format=(string)NV12, framerate=30/1 ' \
+                             '! nvvidconv flip-method=0 ! video/x-raw, width=960, height=616, format=(string)BGRx ! ' \
+                             'videoconvert ! video/x-raw, format=(string)BGR ! appsink wait-on-eos=false max-buffers=1 drop=True'
+        self.cap = cv2.VideoCapture(GSTREAMER_PIPELINE, cv2.CAP_GSTREAMER)
+        self.idx = sensor_id
+        if calibration_fname is not None:
+            self.data = np.load(calibration_fname)
+            self.mtx = self.data['mtx']
+            self.dist = self.data['dist']
+            self.newcameramtx = self.data['newcameramtx']
+
+    def capture_frame_cb(self):
+        ret, frame = self.cap.read()
+        return ret, frame
+
+
+
 class CameraCapture:
     def __init__(self, cam_idx):
         self.cap = cv2.VideoCapture(cam_idx)
@@ -141,7 +161,7 @@ def main():
     #output_dict = filter_unconfident_predictions(output_dict, 0.4)
     #draw_bounding_boxes(img, output_dict)
 
-    cam = CameraCapture(0)
+    cam = NanoCameraCapture(0)
     while True:
         ret, frame = cam.capture_frame_cb()
         cv2.imshow(f"Camera {cam.idx}", frame)
