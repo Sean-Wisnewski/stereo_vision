@@ -162,11 +162,15 @@ def main():
     #draw_bounding_boxes(img, output_dict)
 
     cam = NanoCameraCapture(0)
+    cam = CameraCapture(0)
     while True:
+        print("start of loop")
         ret, frame = cam.capture_frame_cb()
+        print("captured frame")
         cv2.imshow(f"Camera {cam.idx}", frame)
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
+        print("got output dict")
         # TODO move to a callback so I can do processing in semi real time and shit don't hang on the main thread
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         draw_bounding_boxes(frame, output_dict)
