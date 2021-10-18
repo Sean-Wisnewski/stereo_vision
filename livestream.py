@@ -25,6 +25,7 @@ def capture_frames(sensor_id, calibration_fname):
         if not key:
             break
         cv2.imshow(f"Cam {sensor_id}", frame)
+        # this might be backwards hence the fucked up calibration video
         h, w = frame.shape[:2]
         # this is probably giving a weird shape b/c I captured calibration at a higher resolution than they are running at
         newcameramtx, _ = cv2.getOptimalNewCameraMatrix(camera.mtx, camera.dist, (w,h), 0, (w,h))
