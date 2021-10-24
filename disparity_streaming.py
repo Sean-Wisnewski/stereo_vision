@@ -48,7 +48,7 @@ def filter_matches(matches, kp1, kp2):
             good.append(m)
             pts2.append(kp2[m.trainIdx].pt)
             pts1.append(kp1[m.queryIdx].pt)
-    return matches_mask
+    return matches_mask, pts1, pts2
 
 def draw_kp_matches(matches, matches_mask, gray1, gray2, kp1, kp2):
     draw_params = dict(matchColor=(0,255,0), singlePointColor=(255,0,0),
@@ -57,7 +57,7 @@ def draw_kp_matches(matches, matches_mask, gray1, gray2, kp1, kp2):
     cv2.imshow("Keypoint Matches", keypoint_matches)
     cv2.waitKey(0)
     
-def find_fund_matrices(pts1, pts2):
+def find_fund_mtx(pts1, pts2):
     pts1 = np.int32(pts1)
     pts2 = np.int32(pts2)
     fnd_mtx, inliners = cv2.findFundamentalMat(pts1, pts2, cv2.FM_RANSAC)
@@ -124,13 +124,22 @@ def depth_from_disparity(gray1_rectified, gray2_rectified):
 def main():
     cam0 = NanoCameraCapture(0)
     cam1 = NanoCameraCapture(1)
+    # TODO clean all this up to be cleaner
     while True:
         ret1, frame1 = cam0.capture_frame_cb()
         ret2, frame2 = cam1.capture_frame_cb()
         gray1 = change_to_gray(frame1)
         gray2 = change_to_gray(frame2)
-        cv2.imshow("gray1", gray1)
-        cv2.imshow("gray2", gray2)
+        kp1, des1, _ = find_keypoints(gray1)
+        kp2, des2, _ = find_keypoints(gray2)
+        matches = match_keypoints(des1, des2)
+        matches_mask, pts1, pts2 = filter_matches(matches, kp1, kp2)
+        # skipping showing matches for now...
+        fnd_mtx, pts1, pts2 = find_fund_mtx(pts1, pts2)
+        H1, H2 = stereo_rectification(gray1, gray2, pts1, pts2, fnd_mtx)
+        gray1_rect, gray2_rect = undistort_imgs(gray1, gray2, H1, H2)
+        dfd_img = depth_from_disparity(gray1_rect, gray2_rect)
+        cv2.imshow("DFD map", dfd_img)
         if cv2.waitKey(1) == 27:
             break
     cam0.cap.release()
