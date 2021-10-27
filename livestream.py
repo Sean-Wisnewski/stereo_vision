@@ -16,6 +16,14 @@ class CameraCapture:
         self.mtx = self.data['mtx']
         self.dist = self.data['dist']
         self.newcameramtx = self.data['newcameramtx']
+        # magic numbers bad but here we are
+        scale_x = 960/3264
+        scale_y = 616/2464
+        # scale fx, cx, fy, cy to match input resolution, not calibration resolution
+        self.mtx[0,0]*=scale_x
+        self.mtx[0,2]*=scale_x
+        self.mtx[1,0]*=scale_y
+        self.mtx[1,2]*=scale_y
 
 def capture_frames(sensor_id, calibration_fname):
     print(f"Starting camera {sensor_id}")
