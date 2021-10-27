@@ -22,7 +22,7 @@ class CameraCapture:
         # scale fx, cx, fy, cy to match input resolution, not calibration resolution
         self.mtx[0,0]*=scale_x
         self.mtx[0,2]*=scale_x
-        self.mtx[1,0]*=scale_y
+        self.mtx[1,1]*=scale_y
         self.mtx[1,2]*=scale_y
 
 def capture_frames(sensor_id, calibration_fname):
