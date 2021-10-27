@@ -82,12 +82,15 @@ def main():
     while True:
         key0, gray0 = cam0.read_frame(make_gray=True)
         key1, gray1 = cam1.read_frame(make_gray=True)
-        cv2.imshow("Cam 0", gray0)
-        cv2.imshow("Cam 1", gray1)
+        #cv2.imshow("Cam 0", gray0)
+        #cv2.imshow("Cam 1", gray1)
         undist0 = cv2.undistort(gray0, cam0.mtx, cam0.dist, None)
         undist1 = cv2.undistort(gray1, cam1.mtx, cam1.dist, None)
-        cv2.imshow("Cam 0(undist)", undist0)
-        cv2.imshow("Cam 1(undist)", undist1)
+        #cv2.imshow("Cam 0(undist)", undist0)
+        #cv2.imshow("Cam 1(undist)", undist1)
+        stereo = make_stereo_matcher()
+        dfd = compute_dfd_map(stereo, undist0, undist1, normalize=True)
+        cv2.imshow("DFD map", dfd)
         if cv2.waitKey(1) == 27:
             break
     cv2.destroyAllWindows()
