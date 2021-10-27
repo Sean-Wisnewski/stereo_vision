@@ -25,17 +25,19 @@ def change_to_gray(img):
 
 def find_keypoints(gray):
     # this is not included with cv2 directly b/c of patents and I don't currently feel like fighting dependency hell
-    #sift = cv2.SIFT_create()
+    # well I ended up needed opencv-contrib-python for both, so recompiling from source *should* let this work
+    sift = cv2.SIFT_create()
+    kp, des = sift.detectAndCompute(gray, None)
     # need to install `pip install opencv-contrib-python to get this
     # so, replace it with something else
-    freak = cv2.xfeatures2d.FREAK_create()
+    #freak = cv2.xfeatures2d.FREAK_create()
     # need to do keypoint detection with something else b/c detect and compute is unimplemented for FREAK
-    fast = cv2.FastFeatureDetector_create()
-    kp = fast.detect(gray, None)
+    #fast = cv2.FastFeatureDetector_create()
+    #kp = fast.detect(gray, None)
     #kp, des = freak.detectAndCompute(gray, None)
-    kp, des = freak.compute(gray, kp)
+    #kp, des = freak.compute(gray, kp)
     # convert to a dtype accepted by flann later
-    des = des.astype(np.float32)
+    #des = des.astype(np.float32)
     img_sift = cv2.drawKeypoints(gray, kp, None, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     return kp, des, img_sift
 
