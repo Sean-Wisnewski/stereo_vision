@@ -39,14 +39,6 @@ def capture_frames(sensor_id, calibration_fname):
         #newcameramtx, _ = cv2.getOptimalNewCameraMatrix(camera.mtx, camera.dist, (w,h), 0, (w,h))
 
         #undist = cv2.undistort(frame, camera.mtx, camera.dist, None, newcameramtx)
-        # scaling coefficients
-        scale_x = 1920/3264
-        scale_y = 1080/2464
-        # scale fx, cx, fy, cy to match input resolution, not calibration resolution
-        camera.mtx[0,0]*=scale_x
-        camera.mtx[0,2]*=scale_x
-        camera.mtx[1,1]*=scale_y
-        camera.mtx[1,2]*=scale_y
         # Not using the newcameramtx since I don't feel like scaling/figuring it out *yet*
         undist = cv2.undistort(frame, camera.mtx, camera.dist, None)
         cv2.imshow(f"Cam {sensor_id}(Undistorted)", undist)
