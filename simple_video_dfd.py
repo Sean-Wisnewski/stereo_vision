@@ -79,6 +79,7 @@ def main():
     args = parser.parse_args()
     cam0 = NanoCalibratedCameraCapture(0, args.cam0_calibration)
     cam1 = NanoCalibratedCameraCapture(1, args.cam1_calibration)
+    count = 0
     while True:
         key0, gray0 = cam0.read_frame(make_gray=True)
         key1, gray1 = cam1.read_frame(make_gray=True)
@@ -90,7 +91,10 @@ def main():
         #cv2.imshow("Cam 1(undist)", undist1)
         stereo = make_stereo_matcher()
         dfd = compute_dfd_map(stereo, undist0, undist1, normalize=True)
-        cv2.imshow("DFD map", dfd)
+        # this is extra slow, figure out later
+        #cv2.imshow("DFD map", dfd)
+        cv2.imwrite(f"dfd_map_{count}.png", dfd)
+        count += 1
         if cv2.waitKey(1) == 27:
             break
     cv2.destroyAllWindows()
