@@ -93,7 +93,7 @@ def main():
         dfd = compute_dfd_map(stereo, undist0, undist1, normalize=True)
         # this is extra slow, figure out later
         #cv2.imshow("DFD map", dfd)
-        cv2.imwrite(f"dfd_map_{count}.png", dfd)
+        cv2.imwrite(f"dfd_test_imgs/dfd_map_{count}.png", dfd)
         count += 1
         if cv2.waitKey(1) == 27:
             break
