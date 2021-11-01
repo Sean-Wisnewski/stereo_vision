@@ -140,8 +140,8 @@ def draw_bounding_boxes(img, output_dict, colors=np.array([[255, 0, 0], [0, 255,
     to_show = converted.numpy()
 
     cv2.imshow(f"Most Confident bounding boxes", to_show)
-    plt.imshow(img_with_boxes[0].numpy().astype(np.int32))
-    plt.show()
+    #plt.imshow(img_with_boxes[0].numpy().astype(np.int32))
+    #plt.show()
 
 
 def main():
@@ -157,6 +157,7 @@ def main():
     #img_batch, label_batch = next(iter(test_ds))
     #img = img_batch[0]
     #print(img)
+    """
     sample_img_fname = "./dfd_test_imgs/dfd_map_0.png"
     img = cv2.imread(sample_img_fname)
     input_tensor = preprocess_image(img, img_size)
@@ -166,18 +167,18 @@ def main():
     #output_dict = inference_for_single_image(model, img)
     #output_dict = filter_unconfident_predictions(output_dict, 0.4)
     #draw_bounding_boxes(img, output_dict)
-
     """
-    cam = NanoCameraCapture(0)
+
+    #cam = NanoCameraCapture(0)
     cam = CameraCapture(0)
     while True:
-        print("start of loop")
+        #print("start of loop")
         ret, frame = cam.capture_frame_cb()
-        print("captured frame")
+        #print("captured frame")
         cv2.imshow(f"Camera {cam.idx}", frame)
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
-        print("got output dict")
+        #print("got output dict")
         # TODO move to a callback so I can do processing in semi real time and shit don't hang on the main thread
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         draw_bounding_boxes(frame, output_dict)
@@ -185,7 +186,6 @@ def main():
             break
     cam.cap.release()
     cv2.destroyAllWindows()
-    """
 
 
 if __name__=="__main__":
