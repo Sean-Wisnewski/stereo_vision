@@ -4,6 +4,7 @@ import pathlib
 import matplotlib.pyplot as plt
 import tensorflow_hub as hub
 import cv2
+from PIL import Image, ImageDraw, ImageFont
 
 
 class NanoCameraCapture:
@@ -132,16 +133,32 @@ def filter_unconfident_predictions(output_dict, threshold=0.5):
     output_dict['detection_classes'] = new_classes
     return output_dict
 
-def draw_bounding_boxes(img, output_dict, colors=np.array([[255, 0, 0], [0, 255, 0]])):
+def draw_bounding_boxes(img, output_dict, colors=np.array([[255, 0, 0], [0, 255, 0]]), give_annotated=False):
     boxes = output_dict['detection_boxes']
     img = tf.cast(img, tf.float32)
     img_with_boxes = tf.image.draw_bounding_boxes(img[tf.newaxis, ...], boxes[tf.newaxis, ...], colors)
     converted = tf.cast(img_with_boxes[0], tf.uint8)
     to_show = converted.numpy()
 
-    cv2.imshow(f"Most Confident bounding boxes", to_show)
+    if not give_annotated:
+        cv2.imshow(f"Most Confident bounding boxes", to_show)
+    else:
+        # returns the np array of the image with bounding boxes already drawn
+        return to_show
     #plt.imshow(img_with_boxes[0].numpy().astype(np.int32))
     #plt.show()
+
+def draw_bounding_boxes_with_labels_confidence(img, output_dict,colors=np.array([[255, 0, 0], [0, 255, 0]])):
+    boxes = output_dict['detection_boxes']
+    scores = output_dict['detection_scores']
+    classes = output_dict['detection_classes']
+    # This is making the assumption that the img is an np.ndarray, which when this is called it *should* be
+    # yes I'm aware that I should add error handling, currently it is a todo if I have time later
+    img = Image.fromarray(img)
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.load_default()
+    draw.text((0,0), "Sample Text", (0,0,0), font=font)
+    cv2.imshow("Labeled Ouput", np.array(img, dtype=np.uint8))
 
 
 def main():
@@ -181,7 +198,8 @@ def main():
         #print("got output dict")
         # TODO move to a callback so I can do processing in semi real time and shit don't hang on the main thread
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
-        draw_bounding_boxes(frame, output_dict)
+        with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True)
+        draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict)
         if cv2.waitKey(1) == 27:
             break
     cam.cap.release()
