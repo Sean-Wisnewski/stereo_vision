@@ -9,7 +9,7 @@ label_dict = {}
 with open(fname, 'r') as f:
     lines = f.readlines()
     for line in lines:
-        label_dict[count] = line
+        label_dict[count] = line.strip()
         count += 1
 with open(save_name, 'wb') as pkl_file:
     pickle.dump(label_dict, pkl_file, protocol=pickle.HIGHEST_PROTOCOL)

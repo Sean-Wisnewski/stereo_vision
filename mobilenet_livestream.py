@@ -1,10 +1,9 @@
 import tensorflow as tf
 import numpy as np
-import pathlib
-import matplotlib.pyplot as plt
 import tensorflow_hub as hub
 import cv2
 from PIL import Image, ImageDraw, ImageFont
+import pickle
 
 
 class NanoCameraCapture:
@@ -57,6 +56,10 @@ class CameraCapture:
 def load_from_hub(model_name):
     model = hub.load(model_name)
     return model
+
+def load_label_dict(fname):
+    with open(fname, "rb") as handle:
+        return pickle.load(handle)
 
 def preprocess_image(image, img_size=tf.constant([224, 224])):
     """
@@ -148,18 +151,25 @@ def draw_bounding_boxes(img, output_dict, colors=np.array([[255, 0, 0], [0, 255,
     #plt.imshow(img_with_boxes[0].numpy().astype(np.int32))
     #plt.show()
 
-def draw_bounding_boxes_with_labels_confidence(img, output_dict,colors=np.array([[255, 0, 0], [0, 255, 0]])):
+def draw_bounding_boxes_with_labels_confidence(img, output_dict, labels_dict, colors=np.array([[255, 0, 0], [0, 255, 0]])):
     boxes = output_dict['detection_boxes']
     scores = output_dict['detection_scores']
     classes = output_dict['detection_classes']
+    shape = img.shape
     # This is making the assumption that the img is an np.ndarray, which when this is called it *should* be
     # yes I'm aware that I should add error handling, currently it is a todo if I have time later
     img = Image.fromarray(img)
     draw = ImageDraw.Draw(img)
     font = ImageFont.load_default()
-    draw.text((0,0), "Sample Text", (0,0,0), font=font)
-    cv2.imshow("Labeled Ouput", np.array(img, dtype=np.uint8))
-
+    for idx, box in enumerate(boxes):
+        x = box[1]*shape[1]
+        y = box[0]*shape[0]
+        # the indices should all match
+        class_label_idx = classes[idx].numpy()
+        class_label = labels_dict[class_label_idx]
+        confidence = scores[idx].numpy()
+        draw.text((x,y), f"{class_label}: {confidence}", (0,0,0), font=font)
+    cv2.imshow("Labeled Output", np.array(img, dtype=np.uint8))
 
 def main():
     data_dir = "/home/sean/datasets/imagenetv2-top-images-format-val"
@@ -186,6 +196,7 @@ def main():
     #draw_bounding_boxes(img, output_dict)
     """
 
+    class_dict = load_label_dict("./labels/coco2017/labels_dict.pkl")
     #cam = NanoCameraCapture(0)
     cam = CameraCapture(0)
     while True:
@@ -199,7 +210,7 @@ def main():
         # TODO move to a callback so I can do processing in semi real time and shit don't hang on the main thread
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True)
-        draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict)
+        draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict)
         if cv2.waitKey(1) == 27:
             break
     cam.cap.release()
