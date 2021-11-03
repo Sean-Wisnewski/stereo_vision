@@ -21,6 +21,8 @@ def make_argparser():
     parser.add_argument('--idx1', type=int, help="Index of the second camera")
     parser.add_argument('--cal_file0', type=str, help="Filename containing the calibration matrix for the first camera")
     parser.add_argument('--cal_file1', type=str, help="Filename containing the calibration matrix for the second camera")
+    parser.add_argument('--model', type=str, help="path to directory containing the model OR model name on tf hub",
+                        default="https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
     return parser
 
 def check_args(args):
@@ -68,15 +70,19 @@ def rectify_imgs(img1, img2):
 # Control Flow
 ####################
 
-def start_run(runtype, idx0=None, idx1=None, cal0=None, cal1=None):
+def start_run(runtype, model=None, idx0=None, idx1=None, cal0=None, cal1=None, class_dict=None, colors=None):
     if runtype == "Uncalibrated":
         print("Uncal")
+        uncalibrated_run(model, idx0, class_dict, colors)
     elif runtype == "Calibrated":
         print("Cal")
+        calibrated_run(model, idx0, cal0, class_dict, colors)
     elif runtype == "Rectified":
         print("Rect")
+        rectified_run(model, idx0, idx1, cal0, cal1, class_dict, colors)
     elif runtype == "DFD":
         print("DFD")
+        dfd_run(model, idx0, idx1, cal0, cal1, class_dict, colors)
     else:
         print("Literally how did you get here")
 
@@ -200,7 +206,9 @@ def main():
     check_args(args)
     class_labels_dict = load_pkl_file(args.labels_fname)
     colors = load_pkl_file(args.colors_fname)
-    start_run(args.runtype)
+    model = load_from_hub(args.model)
+
+    start_run(args.runtype, model, args.idx0, args.idx1, args.cal_fname0, args.cal_fname1, class_labels_dict, colors)
 
 
 if __name__=="__main__":
