@@ -57,7 +57,7 @@ def load_from_hub(model_name):
     model = hub.load(model_name)
     return model
 
-def load_label_dict(fname):
+def load_pkl_file(fname):
     with open(fname, "rb") as handle:
         return pickle.load(handle)
 
@@ -168,7 +168,13 @@ def draw_bounding_boxes_with_labels_confidence(img, output_dict, labels_dict, co
         class_label_idx = classes[idx].numpy()
         class_label = labels_dict[class_label_idx]
         confidence = scores[idx].numpy()
-        draw.text((x,y), f"{class_label}: {confidence}", (0,0,0), font=font)
+        # idk how, but somehow mobilenet (the version I'm using) can predict classes not in the coco2017 dataset
+        # which is what it's trained on. So, if this ever fails, just default to drawing black text
+        try:
+            color = tuple(colors[int(class_label_idx)])
+        except IndexError:
+            color = (0,0,0)
+        draw.text((x,y), f"{class_label}: {confidence}", color, font=font)
     cv2.imshow("Labeled Output", np.array(img, dtype=np.uint8))
 
 def main():
@@ -196,7 +202,8 @@ def main():
     #draw_bounding_boxes(img, output_dict)
     """
 
-    class_dict = load_label_dict("./labels/coco2017/labels_dict.pkl")
+    class_dict = load_pkl_file("./labels/coco2017/labels_dict.pkl")
+    colors = load_pkl_file("./labels/coco2017/colors_arr.pkl")
     #cam = NanoCameraCapture(0)
     cam = CameraCapture(0)
     while True:
@@ -209,8 +216,8 @@ def main():
         #print("got output dict")
         # TODO move to a callback so I can do processing in semi real time and shit don't hang on the main thread
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
-        with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True)
-        draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict)
+        with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
+        draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
         if cv2.waitKey(1) == 27:
             break
     cam.cap.release()
