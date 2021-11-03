@@ -121,7 +121,10 @@ def calibrated_run(model, idx0, cal_fname, class_dict, colors):
     cam = NanoCameraCapture(idx0, cal_fname)
     while True:
         ret, frame = cam.capture_frame_cb()
+        print(frame.shape)
+        cv2.imshow(f"Camera {cam.idx}(Calibrated)", frame)
         undist = cv2.undistort(frame, cam.mtx, cam.dist, None)
+        print(undist.shape)
         cv2.imshow(f"Camera {cam.idx}(Calibrated)", undist)
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
@@ -206,7 +209,8 @@ def main():
     check_args(args)
     class_labels_dict = load_pkl_file(args.labels_fname)
     colors = load_pkl_file(args.colors_fname)
-    model = load_from_hub(args.model)
+    #model = load_from_hub(args.model)
+    model = None
 
     start_run(args.runtype, model, args.idx0, args.idx1, args.cal_file0, args.cal_file1, class_labels_dict, colors)
 
