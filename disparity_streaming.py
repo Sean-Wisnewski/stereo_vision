@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
-#from sample_rect_dfd import drawlines
+from mobilenet_livestream import NanoCameraCapture
 
 
+"""
 class NanoCameraCapture:
     def __init__(self, sensor_id, calibration_fname=None):
         GSTREAMER_PIPELINE = f'nvarguscamerasrc sensor-id={sensor_id} ! video/x-raw(memory:NVMM), width=1920, height=1080, format=(string)NV12, framerate=30/1 ' \
@@ -19,6 +20,7 @@ class NanoCameraCapture:
     def capture_frame_cb(self):
         ret, frame = self.cap.read()
         return ret, frame
+"""
 
 def change_to_gray(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
