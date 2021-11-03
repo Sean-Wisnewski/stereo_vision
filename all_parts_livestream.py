@@ -208,7 +208,7 @@ def main():
     colors = load_pkl_file(args.colors_fname)
     model = load_from_hub(args.model)
 
-    start_run(args.runtype, model, args.idx0, args.idx1, args.cal_fname0, args.cal_fname1, class_labels_dict, colors)
+    start_run(args.runtype, model, args.idx0, args.idx1, args.cal_file0, args.cal_file1, class_labels_dict, colors)
 
 
 if __name__=="__main__":
