@@ -163,8 +163,9 @@ def rectified_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors)
     cam1.cap.release()
     cv2.destroyAllWindows()
 
-def dfd_run(model, idx0, idx1, cal_mtx0, cal_mtx1, class_dict, colors):
+def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
     """
+    Note: this is quite literally rectified, but with one more step to create the DFD map, then run inference on that
     :param idx0:
     :param idx1:
     :param cal_mtx0:
@@ -173,6 +174,24 @@ def dfd_run(model, idx0, idx1, cal_mtx0, cal_mtx1, class_dict, colors):
     :param colors:
     :return:
     """
+    cam0 = NanoCameraCapture(idx0, cal_fname0)
+    cam1 = NanoCameraCapture(idx1, cal_fname1)
+    while True:
+        ret1, frame1 = cam0.capture_frame_cb()
+        ret2, frame2 = cam1.capture_frame_cb()
+        gray_rect1, gray_rect2 = rectify_imgs(frame1, frame2)
+        dfd_img = depth_from_disparity(gray_rect1, gray_rect2)
+        cv2.imshow("DFD Image", dfd_img)
+        as_tensor = preprocess_image(dfd_img)
+        output_dict = inference_for_single_image(model, as_tensor)
+        output_dict = filter_unconfident_predictions(output_dict, 0.4)
+        with_boxes = draw_bounding_boxes(dfd_img, output_dict, give_annotated=True, colors=colors)
+        draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+        if cv2.waitKey(1) == 27:
+            break
+    cam0.cap.release()
+    cam1.cap.release()
+    cv2.destroyAllWindows()
 
 
 def main():
