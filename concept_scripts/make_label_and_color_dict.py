@@ -16,7 +16,8 @@ with open(fname, 'r') as f:
         colors_lst.append(np.random.randint(0,256, 3))
         count += 1
 colors_arr =np.array(colors_lst)
+# use protocol=3 for compatibility with python 3.7 (installed on the nano)
 with open(save_name, 'wb') as pkl_file:
-    pickle.dump(label_dict, pkl_file, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(label_dict, pkl_file, protocol=3)
 with open(colors_save_name, 'wb') as pkl_file:
-    pickle.dump(colors_arr, pkl_file, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(colors_arr, pkl_file, protocol=3)
