@@ -54,17 +54,51 @@ def check_args(args):
 def recolor_img(img):
     return cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
-def rectify_imgs(img1, img2):
-    gray1 = change_to_gray(img1)
-    gray2 = change_to_gray(img2)
-    kp1, des1, _ = find_keypoints(gray1)
-    kp2, des2, _ = find_keypoints(gray2)
-    matches = match_keypoints(des1, des2)
-    matches_mask, pts1, pts2 = filter_matches(matches, kp1, kp2)
-    fnd_mtx, pts1, pts2 = find_fund_mtx(pts1, pts2)
-    H1, H2 = stereo_rectification(gray1, gray2, pts1, pts2, fnd_mtx)
-    gray1_rect, gray2_rect = undistort_imgs(gray1, gray2, H1, H2)
-    return gray1_rect, gray2_rect
+def make_stereo_matcher():
+    # Matched block size. It must be an odd number >=1 . Normally, it should be somewhere in the 3..11 range.
+    block_size = 11
+    min_disp = -128
+    max_disp = 128
+    # Maximum disparity minus minimum disparity. The value is always greater than zero.
+    # In the current implementation, this parameter must be divisible by 16.
+    num_disp = max_disp - min_disp
+    # Margin in percentage by which the best (minimum) computed cost function value should "win" the second best value to consider the found match correct.
+    # Normally, a value within the 5-15 range is good enough
+    uniquenessRatio = 5
+    # Maximum size of smooth disparity regions to consider their noise speckles and invalidate.
+    # Set it to 0 to disable speckle filtering. Otherwise, set it somewhere in the 50-200 range.
+    speckleWindowSize = 200
+    # Maximum disparity variation within each connected component.
+    # If you do speckle filtering, set the parameter to a positive value, it will be implicitly multiplied by 16.
+    # Normally, 1 or 2 is good enough.
+    speckleRange = 2
+    disp12MaxDiff = 0
+    stereo = cv2.StereoSGBM_create(
+        minDisparity=min_disp,
+        numDisparities=num_disp,
+        blockSize=block_size,
+        uniquenessRatio=uniquenessRatio,
+        speckleWindowSize=speckleWindowSize,
+        speckleRange=speckleRange,
+        disp12MaxDiff=disp12MaxDiff,
+        P1=8 * 1 * block_size * block_size,
+        P2=32 * 1 * block_size * block_size,
+    )
+    return stereo
+
+def rectify_imgs(img0, img1, cam0, cam1, recolor=False):
+    gray1 = change_to_gray(img0)
+    gray2 = change_to_gray(img1)
+    undist0 = cv2.undistort(img0, cam0.mtx, cam0.dist, None)
+    undist1 = cv2.undistort(img1, cam1.mtx, cam1.dist, None)
+    R1, R2, P1, P2, Q, _, _ = cv2.stereoRectify(cam0.mtx, cam0.dist, cam1.mtx, cam1.dist, (3264, 2464), None, None)
+    undist_map0, rect_tranform_map0 = cv2.initUndistortRectifyMap(cam0.mtx, cam0.dist, R1, None, (3264, 2464), None)
+    undist_map1, rect_tranform_map1 = cv2.initUndistortRectifyMap(cam1.mtx, cam1.dist, R2, None, (3264, 2464), None)
+    rect0 = cv2.remap(undist0, None, undist_map0, rect_tranform_map0)
+    rect1 = cv2.remap(undist1, None, undist_map1, rect_tranform_map1)
+    return rect0, rect1
+
+
 
 ####################
 # Control Flow
@@ -155,7 +189,7 @@ def rectified_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors)
     while True:
         ret1, frame1 = cam0.capture_frame_cb()
         ret2, frame2 = cam1.capture_frame_cb()
-        gray_rect1, gray_rect2 = rectify_imgs(frame1, frame2)
+        gray_rect1, gray_rect2 = rectify_imgs(frame1, frame2, cam0, cam1)
         recolored_1 = recolor_img(gray_rect1)
         recolored_2 = recolor_img(gray_rect2)
         cv2.imshow(f"Camera {cam0.idx}(Rectified)", recolored_1)
