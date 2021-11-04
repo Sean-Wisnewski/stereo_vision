@@ -86,7 +86,23 @@ def make_stereo_matcher():
     )
     return stereo
 
+def compute_dfd_map(stereo, imgL, imgR, normalize=False):
+    disparty_SGBM = stereo.compute(imgL, imgR)
+    if normalize:
+        disparty_SGBM = cv2.normalize(disparty_SGBM, disparty_SGBM, alpha=255, beta=0, norm_type=cv2.NORM_MINMAX)
+    # since we normalize to 0..255, return a uint8 matrix
+    return np.uint8(disparty_SGBM)
+
 def rectify_imgs(img0, img1, cam0, cam1, recolor=False):
+    """
+    TODO figure out wth is wrong with stereoRectify b/c it just don't wanna work
+    :param img0:
+    :param img1:
+    :param cam0:
+    :param cam1:
+    :param recolor:
+    :return:
+    """
     gray1 = change_to_gray(img0)
     gray2 = change_to_gray(img1)
     undist0 = cv2.undistort(img0, cam0.mtx, cam0.dist, None)
@@ -98,6 +114,14 @@ def rectify_imgs(img0, img1, cam0, cam1, recolor=False):
     rect1 = cv2.remap(undist1, undist_map1, rect_tranform_map1, cv2.INTER_LINEAR)
     return rect0, rect1
 
+def make_dfd_map(img0, img1, cam0, cam1):
+    gray1 = change_to_gray(img0)
+    gray2 = change_to_gray(img1)
+    undist0 = cv2.undistort(img0, cam0.mtx, cam0.dist, None)
+    undist1 = cv2.undistort(img1, cam1.mtx, cam1.dist, None)
+    stereo = make_stereo_matcher()
+    dfd = compute_dfd_map(stereo, undist0, undist1, normalize=True)
+    return dfd
 
 
 ####################
@@ -228,9 +252,8 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
     while True:
         ret1, frame1 = cam0.capture_frame_cb()
         ret2, frame2 = cam1.capture_frame_cb()
-        gray_rect1, gray_rect2 = rectify_imgs(frame1, frame2)
-        dfd_img = depth_from_disparity(gray_rect1, gray_rect2)
-        cv2.imshow("DFD Image", dfd_img)
+        dfd = make_dfd_map(frame1, frame2, cam0, cam1)
+        cv2.imshow(f"DFD Map", dfd)
         """
         as_tensor = preprocess_image(dfd_img)
         output_dict = inference_for_single_image(model, as_tensor)
