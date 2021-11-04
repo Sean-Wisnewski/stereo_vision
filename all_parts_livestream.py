@@ -159,13 +159,11 @@ def uncalibrated_run(model, idx0, class_dict, colors):
     while True:
         ret, frame = cam.capture_frame_cb()
         cv2.imshow(f"Camera {cam.idx}", frame)
-        """
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
-        """
         if cv2.waitKey(1) == 27:
             break
     cam.cap.release()
@@ -186,13 +184,11 @@ def calibrated_run(model, idx0, cal_fname, class_dict, colors):
         cv2.imshow(f"Camera {cam.idx}(Calibrated)", frame)
         undist = cv2.undistort(frame, cam.mtx, cam.dist, None)
         cv2.imshow(f"Camera {cam.idx}(Calibrated)", undist)
-        """
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
-        """
         if cv2.waitKey(1) == 27:
             break
     cam.cap.release()
@@ -254,13 +250,11 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
         ret2, frame2 = cam1.capture_frame_cb()
         dfd = make_dfd_map(frame1, frame2, cam0, cam1)
         cv2.imshow(f"DFD Map", dfd)
-        """
-        as_tensor = preprocess_image(dfd_img)
+        as_tensor = preprocess_image(dfd)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
-        with_boxes = draw_bounding_boxes(dfd_img, output_dict, give_annotated=True, colors=colors)
+        with_boxes = draw_bounding_boxes(dfd, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
-        """
         if cv2.waitKey(1) == 27:
             break
     cam0.cap.release()
@@ -274,8 +268,7 @@ def main():
     check_args(args)
     class_labels_dict = load_pkl_file(args.labels_fname)
     colors = load_pkl_file(args.colors_fname)
-    #model = load_from_hub(args.model)
-    model = None
+    model = load_from_hub(args.model)
 
     start_run(args.runtype, model, args.idx0, args.idx1, args.cal_file0, args.cal_file1, class_labels_dict, colors)
 
