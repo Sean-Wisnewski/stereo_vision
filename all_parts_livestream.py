@@ -57,8 +57,8 @@ def recolor_img(img):
 def make_stereo_matcher():
     # Matched block size. It must be an odd number >=1 . Normally, it should be somewhere in the 3..11 range.
     block_size = 11
-    min_disp = -128
-    max_disp = 128
+    min_disp = 0
+    max_disp = 256
     # Maximum disparity minus minimum disparity. The value is always greater than zero.
     # In the current implementation, this parameter must be divisible by 16.
     num_disp = max_disp - min_disp
@@ -250,7 +250,8 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
         ret2, frame2 = cam1.capture_frame_cb()
         dfd = make_dfd_map(frame1, frame2, cam0, cam1)
         cv2.imshow(f"DFD Map", dfd)
-        as_tensor = preprocess_image(dfd)
+        # add a depth dimension since the dfd map will only have 2 dimensions, and we need at least 3 to resize it
+        as_tensor = preprocess_image(dfd[tf.newaxis, ...])
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         with_boxes = draw_bounding_boxes(dfd, output_dict, give_annotated=True, colors=colors)
