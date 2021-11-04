@@ -8,8 +8,8 @@ import pickle
 
 class NanoCameraCapture:
     def __init__(self, sensor_id, calibration_fname=None):
-        GSTREAMER_PIPELINE = f'nvarguscamerasrc sensor-id={sensor_id} ! video/x-raw(memory:NVMM), width=3264, height=2464, format=(string)NV12, framerate=21/1 ' \
-                             '! nvvidconv flip-method=0 ! video/x-raw, width=960, height=616, format=(string)BGRx ! ' \
+        GSTREAMER_PIPELINE = f'nvarguscamerasrc sensor-id={sensor_id} ! video/x-raw(memory:NVMM), width=1280, height=720, format=(string)NV12, framerate=30/1 ' \
+                             '! nvvidconv flip-method=0 ! video/x-raw, width=780, height=440, format=(string)BGRx ! ' \
                              'videoconvert ! video/x-raw, format=(string)BGR ! appsink wait-on-eos=false max-buffers=1 drop=True'
         self.cap = cv2.VideoCapture(GSTREAMER_PIPELINE, cv2.CAP_GSTREAMER)
         self.idx = sensor_id
@@ -19,8 +19,10 @@ class NanoCameraCapture:
             self.dist = self.data['dist']
             self.newcameramtx = self.data['newcameramtx']
             # magic numbers bad but here we are
-            scale_x = 960/3264
-            scale_y = 616/2464
+            #scale_x = 960/3264
+            #scale_y = 616/2464
+            scale_x = 780/3264
+            scale_y = 440/2464
             # scale fx, cx, fy, cy to match input resolution, not calibration resolution
             self.mtx[0,0]*=scale_x
             self.mtx[0,2]*=scale_x
