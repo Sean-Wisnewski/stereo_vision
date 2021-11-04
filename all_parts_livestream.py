@@ -251,7 +251,7 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
         dfd = make_dfd_map(frame1, frame2, cam0, cam1)
         cv2.imshow(f"DFD Map", dfd)
         # add a depth dimension since the dfd map will only have 2 dimensions, and we need at least 3 to resize it
-        as_tensor = preprocess_image(dfd)
+        as_tensor = preprocess_image(dfd[tf.newaxis, ...])
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         with_boxes = draw_bounding_boxes(dfd, output_dict, give_annotated=True, colors=colors)
