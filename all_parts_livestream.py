@@ -91,9 +91,9 @@ def rectify_imgs(img0, img1, cam0, cam1, recolor=False):
     gray2 = change_to_gray(img1)
     undist0 = cv2.undistort(img0, cam0.mtx, cam0.dist, None)
     undist1 = cv2.undistort(img1, cam1.mtx, cam1.dist, None)
-    R1, R2, P1, P2, Q, _, _ = cv2.stereoRectify(cam0.mtx, cam0.dist, cam1.mtx, cam1.dist, (960, 616), None, None)
-    undist_map0, rect_tranform_map0 = cv2.initUndistortRectifyMap(cam0.mtx, cam0.dist, R1, None, (960, 616), None)
-    undist_map1, rect_tranform_map1 = cv2.initUndistortRectifyMap(cam1.mtx, cam1.dist, R2, None, (960, 616), None)
+    R1, R2, P1, P2, Q, _, _ = cv2.stereoRectify(cam0.mtx, cam0.dist, cam1.mtx, cam1.dist, (616, 960), None, None)
+    undist_map0, rect_tranform_map0 = cv2.initUndistortRectifyMap(cam0.mtx, cam0.dist, R1, None, (616, 960), None)
+    undist_map1, rect_tranform_map1 = cv2.initUndistortRectifyMap(cam1.mtx, cam1.dist, R2, None, (616, 960), None)
     rect0 = cv2.remap(undist0, undist_map0, rect_tranform_map0, cv2.INTER_LINEAR)
     rect1 = cv2.remap(undist1, undist_map1, rect_tranform_map1, cv2.INTER_LINEAR)
     return rect0, rect1
