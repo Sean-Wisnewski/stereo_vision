@@ -117,8 +117,8 @@ def rectify_imgs(img0, img1, cam0, cam1, recolor=False):
 def make_dfd_map(img0, img1, cam0, cam1):
     gray1 = change_to_gray(img0)
     gray2 = change_to_gray(img1)
-    undist0 = cv2.undistort(img0, cam0.mtx, cam0.dist, None)
-    undist1 = cv2.undistort(img1, cam1.mtx, cam1.dist, None)
+    undist0 = cv2.undistort(gray1, cam0.mtx, cam0.dist, None)
+    undist1 = cv2.undistort(gray2, cam1.mtx, cam1.dist, None)
     stereo = make_stereo_matcher()
     dfd = compute_dfd_map(stereo, undist0, undist1, normalize=True)
     return dfd
@@ -251,7 +251,7 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
         dfd = make_dfd_map(frame1, frame2, cam0, cam1)
         cv2.imshow(f"DFD Map", dfd)
         # add a depth dimension since the dfd map will only have 2 dimensions, and we need at least 3 to resize it
-        as_tensor = preprocess_image(dfd[tf.newaxis, ...])
+        as_tensor = preprocess_image(dfd)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         with_boxes = draw_bounding_boxes(dfd, output_dict, give_annotated=True, colors=colors)
