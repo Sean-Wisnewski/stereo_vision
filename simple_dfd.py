@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('tkagg')
 import matplotlib.pyplot as plt
+from mobilenet_livestream import *
 
 fname1 = "imgs_for_code/sample_rect_imgs/image0000.jpg"
 fname2 = "imgs_for_code/sample_rect_imgs/image0001.jpg"
@@ -63,5 +64,23 @@ disparity_SGBM = stereo.compute(dst, dst2)
 disparity_SGBM = cv2.normalize(disparity_SGBM, disparity_SGBM, alpha=255,
                               beta=0, norm_type=cv2.NORM_MINMAX)
 disparity_SGBM = np.uint8(disparity_SGBM)
-plt.imshow(disparity_SGBM)
-plt.show()
+
+# load mobilenet + other stuff needed for MN
+class_dict = load_pkl_file("./labels/coco2017/labels_dict.pkl")
+colors = load_pkl_file("./labels/coco2017/colors_arr.pkl")
+model = load_from_hub("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
+
+# actually use MN to make classifications
+# Recolor the input image since MN is expecting a 3 channel RGB image as input
+disparity_SGBM = cv2.cvtColor(disparity_SGBM, cv2.COLOR_GRAY2BGR)
+as_tensor = preprocess_image(disparity_SGBM)
+output_dict = inference_for_single_image(model, as_tensor)
+# print("got output dict")
+# TODO move to a callback so I can do processing in semi real time and shit don't hang on the main thread
+output_dict = filter_unconfident_predictions(output_dict, 0.4)
+with_boxes = draw_bounding_boxes(disparity_SGBM, output_dict, give_annotated=True, colors=colors)
+draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+
+cv2.imshow("DFD", disparity_SGBM)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
