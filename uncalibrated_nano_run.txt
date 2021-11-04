@@ -1,0 +1,1 @@
+python3 all_parts_livestream.py Uncalibrated ./labels/coco2017/labels_dict.pkl ./labels/coco2017/colors_arr.pkl --idx0 0 --idx1 1 --cal_file0 ~/final_matrices/close_calibration_cam0.npz --cal_file1 ~/final_matrices/close_calibration_cam1.npz --model ./downloaded_models/another_mn_v2/

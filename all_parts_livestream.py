@@ -73,9 +73,11 @@ def rectify_imgs(img1, img2):
 def start_run(runtype, model=None, idx0=None, idx1=None, cal0=None, cal1=None, class_dict=None, colors=None):
     if runtype == "Uncalibrated":
         print("Uncal")
+        # TODO change to use whichever of idx0 or idx1 is not none
         uncalibrated_run(model, idx0, class_dict, colors)
     elif runtype == "Calibrated":
         print("Cal")
+        # TODO change to use whichever of idx0 or idx1 is not none
         calibrated_run(model, idx0, cal0, class_dict, colors)
     elif runtype == "Rectified":
         print("Rect")
@@ -99,11 +101,13 @@ def uncalibrated_run(model, idx0, class_dict, colors):
     while True:
         ret, frame = cam.capture_frame_cb()
         cv2.imshow(f"Camera {cam.idx}", frame)
+        """
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+        """
         if cv2.waitKey(1) == 27:
             break
     cam.cap.release()
@@ -121,16 +125,16 @@ def calibrated_run(model, idx0, cal_fname, class_dict, colors):
     cam = NanoCameraCapture(idx0, cal_fname)
     while True:
         ret, frame = cam.capture_frame_cb()
-        print(frame.shape)
         cv2.imshow(f"Camera {cam.idx}(Calibrated)", frame)
         undist = cv2.undistort(frame, cam.mtx, cam.dist, None)
-        print(undist.shape)
         cv2.imshow(f"Camera {cam.idx}(Calibrated)", undist)
+        """
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+        """
         if cv2.waitKey(1) == 27:
             break
     cam.cap.release()
@@ -156,6 +160,7 @@ def rectified_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors)
         recolored_2 = recolor_img(gray_rect2)
         cv2.imshow(f"Camera {cam0.idx}(Rectified)", recolored_1)
         cv2.imshow(f"Camera {cam1.idx}(Rectified)", recolored_2)
+        """
         as_tensor1 = preprocess_image(recolored_1)
         as_tensor2 = preprocess_image(recolored_2)
         output_dict1 = inference_for_single_image(model, as_tensor1)
@@ -166,6 +171,7 @@ def rectified_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors)
         with_boxes2 = draw_bounding_boxes(recolored_2, output_dict2, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes1, output_dict1, class_dict, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes2, output_dict2, class_dict, colors=colors)
+        """
         if cv2.waitKey(1) == 27:
             break
     cam0.cap.release()
@@ -191,11 +197,13 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
         gray_rect1, gray_rect2 = rectify_imgs(frame1, frame2)
         dfd_img = depth_from_disparity(gray_rect1, gray_rect2)
         cv2.imshow("DFD Image", dfd_img)
+        """
         as_tensor = preprocess_image(dfd_img)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         with_boxes = draw_bounding_boxes(dfd_img, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+        """
         if cv2.waitKey(1) == 27:
             break
     cam0.cap.release()
