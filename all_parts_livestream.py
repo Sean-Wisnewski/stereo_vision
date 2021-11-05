@@ -60,8 +60,8 @@ def make_stereo_matcher():
     # TODO cite
     # Matched block size. It must be an odd number >=1 . Normally, it should be somewhere in the 3..11 range.
     block_size = 5
-    min_disp = 0
-    max_disp = 64
+    min_disp = 64
+    max_disp = 128
     # Maximum disparity minus minimum disparity. The value is always greater than zero.
     # In the current implementation, this parameter must be divisible by 16.
     num_disp = max_disp - min_disp
