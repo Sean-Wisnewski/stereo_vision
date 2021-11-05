@@ -70,11 +70,11 @@ def make_stereo_matcher():
     uniquenessRatio = 5
     # Maximum size of smooth disparity regions to consider their noise speckles and invalidate.
     # Set it to 0 to disable speckle filtering. Otherwise, set it somewhere in the 50-200 range.
-    speckleWindowSize = 100
+    speckleWindowSize = 60
     # Maximum disparity variation within each connected component.
     # If you do speckle filtering, set the parameter to a positive value, it will be implicitly multiplied by 16.
     # Normally, 1 or 2 is good enough.
-    speckleRange = 1
+    speckleRange = 2
     disp12MaxDiff = 0
     stereo = cv2.StereoSGBM_create(
         minDisparity=min_disp,
