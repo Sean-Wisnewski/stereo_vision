@@ -219,6 +219,8 @@ def main():
     while True:
         #print("start of loop")
         ret, frame = cam.capture_frame_cb()
+        fps = cam.cap.get(cv2.CAP_PROP_FPS)
+        print(fps)
         #print("captured frame")
         cv2.imshow(f"Camera {cam.idx}", frame)
         as_tensor = preprocess_image(frame)
