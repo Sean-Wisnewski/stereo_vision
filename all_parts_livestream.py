@@ -59,7 +59,7 @@ def recolor_img(img):
 def make_stereo_matcher():
     # TODO cite
     # Matched block size. It must be an odd number >=1 . Normally, it should be somewhere in the 3..11 range.
-    block_size = 21
+    block_size = 15
     min_disp = 0
     max_disp = 128
     # Maximum disparity minus minimum disparity. The value is always greater than zero.
