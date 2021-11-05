@@ -2,10 +2,11 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
 import cv2
-import argparse, sys
+import argparse, sys, time
 
 from mobilenet_livestream import *
 from disparity_streaming import *
+from stats_recording import StatsHolder
 
 ####################
 # Helper functions
@@ -23,6 +24,7 @@ def make_argparser():
     parser.add_argument('--cal_file1', type=str, help="Filename containing the calibration matrix for the second camera")
     parser.add_argument('--model', type=str, help="path to directory containing the model OR model name on tf hub",
                         default="https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
+    parser.add_argument('--output_file', type=str, help='file to save recorded stats to')
     return parser
 
 def check_args(args):
@@ -55,6 +57,7 @@ def recolor_img(img):
     return cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
 def make_stereo_matcher():
+    # TODO cite
     # Matched block size. It must be an odd number >=1 . Normally, it should be somewhere in the 3..11 range.
     block_size = 11
     min_disp = 0
@@ -128,24 +131,33 @@ def make_dfd_map(img0, img1, cam0, cam1):
 # Control Flow
 ####################
 
-def start_run(runtype, model=None, idx0=None, idx1=None, cal0=None, cal1=None, class_dict=None, colors=None):
+def start_run(runtype, model=None, idx0=None, idx1=None, cal0=None, cal1=None, class_dict=None, colors=None, save_fname=None):
     if runtype == "Uncalibrated":
         print("Uncal")
         # TODO change to use whichever of idx0 or idx1 is not none
-        uncalibrated_run(model, idx0, class_dict, colors)
+        recorder = uncalibrated_run(model, idx0, class_dict, colors)
+        recorder.save_lists(save_fname)
     elif runtype == "Calibrated":
         print("Cal")
         # TODO change to use whichever of idx0 or idx1 is not none
         calibrated_run(model, idx0, cal0, class_dict, colors)
-    elif runtype == "Rectified":
-        print("Rect")
-        rectified_run(model, idx0, idx1, cal0, cal1, class_dict, colors)
     elif runtype == "DFD":
         print("DFD")
         dfd_run(model, idx0, idx1, cal0, cal1, class_dict, colors)
     else:
         print("Literally how did you get here")
 
+
+def add_stats_to_recorder(recorder : StatsHolder, fps, inference_time, confidences, img=None):
+    if type(fps) == list:
+        for val in fps:
+            recorder.fpss.append(val)
+    else:
+        recorder.fpss.append(fps)
+    recorder.inference_times.append(inference_time)
+    recorder.confidences.append(confidences)
+    if img is not None:
+        recorder.pics.append(img)
 
 def uncalibrated_run(model, idx0, class_dict, colors):
     """
@@ -155,19 +167,31 @@ def uncalibrated_run(model, idx0, class_dict, colors):
     :param colors:
     :return:
     """
-    cam = NanoCameraCapture(idx0)
+    #cam = NanoCameraCapture(idx0)
+    cam = CameraCapture(idx0)
+    recorder = StatsHolder()
+    count = 0
     while True:
         ret, frame = cam.capture_frame_cb()
-        cv2.imshow(f"Camera {cam.idx}", frame)
+        fps = cam.cap.get(cv2.CAP_PROP_FPS)
+        start = time.time()
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
+        end = time.time()
         with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+        if count % 20 == 0:
+            add_stats_to_recorder(recorder, fps, (end-start), output_dict['detection_scores'], with_boxes)
+        else:
+            add_stats_to_recorder(recorder, fps, (end-start), output_dict['detection_scores'], None)
+        count += 1
+        cv2.imshow(f"Camera {cam.idx}", frame)
         if cv2.waitKey(1) == 27:
             break
     cam.cap.release()
     cv2.destroyAllWindows()
+    return recorder
 
 
 def calibrated_run(model, idx0, cal_fname, class_dict, colors):
@@ -179,58 +203,31 @@ def calibrated_run(model, idx0, cal_fname, class_dict, colors):
     :return:
     """
     cam = NanoCameraCapture(idx0, cal_fname)
+    recorder = StatsHolder()
+    count = 0
     while True:
         ret, frame = cam.capture_frame_cb()
-        cv2.imshow(f"Camera {cam.idx}(Calibrated)", frame)
+        fps = cam.cap.get(cv2.CAP_PROP_FPS)
+        start = time.time()
         undist = cv2.undistort(frame, cam.mtx, cam.dist, None)
-        cv2.imshow(f"Camera {cam.idx}(Calibrated)", undist)
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
+        end = time.time()
         with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+        if count % 20 == 0:
+            add_stats_to_recorder(recorder, fps, (end-start), output_dict['detection_scores'], with_boxes)
+        else:
+            add_stats_to_recorder(recorder, fps, (end-start), output_dict['detection_scores'], None)
+        count += 1
+        #cv2.imshow(f"Camera {cam.idx}(Calibrated)", undist)
+        cv2.imshow(f"Camera {cam.idx}(Calibrated)", frame)
         if cv2.waitKey(1) == 27:
             break
     cam.cap.release()
     cv2.destroyAllWindows()
-
-def rectified_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
-    """
-    :param idx0:
-    :param idx1:
-    :param cal_mtx0:
-    :param cal_mtx1:
-    :param class_dict:
-    :param colors:
-    :return:
-    """
-    cam0 = NanoCameraCapture(idx0, cal_fname0)
-    cam1 = NanoCameraCapture(idx1, cal_fname1)
-    while True:
-        ret1, frame1 = cam0.capture_frame_cb()
-        ret2, frame2 = cam1.capture_frame_cb()
-        gray_rect1, gray_rect2 = rectify_imgs(frame1, frame2, cam0, cam1)
-        recolored_1 = recolor_img(gray_rect1)
-        recolored_2 = recolor_img(gray_rect2)
-        cv2.imshow(f"Camera {cam0.idx}(Rectified)", recolored_1)
-        cv2.imshow(f"Camera {cam1.idx}(Rectified)", recolored_2)
-        """
-        as_tensor1 = preprocess_image(recolored_1)
-        as_tensor2 = preprocess_image(recolored_2)
-        output_dict1 = inference_for_single_image(model, as_tensor1)
-        output_dict1 = filter_unconfident_predictions(output_dict1, 0.4)
-        output_dict2 = inference_for_single_image(model, as_tensor2)
-        output_dict2 = filter_unconfident_predictions(output_dict2, 0.4)
-        with_boxes1 = draw_bounding_boxes(recolored_1, output_dict1, give_annotated=True, colors=colors)
-        with_boxes2 = draw_bounding_boxes(recolored_2, output_dict2, give_annotated=True, colors=colors)
-        draw_bounding_boxes_with_labels_confidence(with_boxes1, output_dict1, class_dict, colors=colors)
-        draw_bounding_boxes_with_labels_confidence(with_boxes2, output_dict2, class_dict, colors=colors)
-        """
-        if cv2.waitKey(1) == 27:
-            break
-    cam0.cap.release()
-    cam1.cap.release()
-    cv2.destroyAllWindows()
+    return recorder
 
 def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
     """
@@ -243,26 +240,38 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
     :param colors:
     :return:
     """
+    recorder = StatsHolder()
     cam0 = NanoCameraCapture(idx0, cal_fname0)
     cam1 = NanoCameraCapture(idx1, cal_fname1)
+    count = 0
     while True:
         ret1, frame1 = cam0.capture_frame_cb()
         ret2, frame2 = cam1.capture_frame_cb()
+        fps0 = cam0.cap.get(cv2.CAP_PROP_FPS)
+        fps1 = cam1.cap.get(cv2.CAP_PROP_FPS)
+        start = time.time()
         dfd = make_dfd_map(frame1, frame2, cam0, cam1)
-        cv2.imshow(f"DFD Map", dfd)
         # "recolor" the input to get 3 dimensions, which is what MN expects
         # this is dumb, TOO BAD!
         dfd = cv2.cvtColor(dfd, cv2.COLOR_GRAY2BGR)
         as_tensor = preprocess_image(dfd[tf.newaxis, ...])
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
+        end = time.time()
         with_boxes = draw_bounding_boxes(dfd, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+        if count % 20 == 0:
+            add_stats_to_recorder(recorder, [fps0, fps1], (end-start), output_dict['detection_scores'], with_boxes)
+        else:
+            add_stats_to_recorder(recorder, [fps0, fps1], (end-start), output_dict['detection_scores'], None)
+        count += 1
+        cv2.imshow(f"DFD Map", dfd)
         if cv2.waitKey(1) == 27:
             break
     cam0.cap.release()
     cam1.cap.release()
     cv2.destroyAllWindows()
+    return recorder
 
 
 def main():
@@ -273,7 +282,7 @@ def main():
     colors = load_pkl_file(args.colors_fname)
     model = load_from_hub(args.model)
 
-    start_run(args.runtype, model, args.idx0, args.idx1, args.cal_file0, args.cal_file1, class_labels_dict, colors)
+    start_run(args.runtype, model, args.idx0, args.idx1, args.cal_file0, args.cal_file1, class_labels_dict, colors, args.output_file)
 
 
 if __name__=="__main__":
