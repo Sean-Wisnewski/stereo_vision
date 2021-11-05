@@ -60,14 +60,14 @@ def make_stereo_matcher():
     # TODO cite
     # Matched block size. It must be an odd number >=1 . Normally, it should be somewhere in the 3..11 range.
     block_size = 5
-    min_disp = 64
-    max_disp = 256
+    min_disp = 32
+    max_disp = 128
     # Maximum disparity minus minimum disparity. The value is always greater than zero.
     # In the current implementation, this parameter must be divisible by 16.
     num_disp = max_disp - min_disp
     # Margin in percentage by which the best (minimum) computed cost function value should "win" the second best value to consider the found match correct.
     # Normally, a value within the 5-15 range is good enough
-    uniquenessRatio = 15
+    uniquenessRatio = 7
     # Maximum size of smooth disparity regions to consider their noise speckles and invalidate.
     # Set it to 0 to disable speckle filtering. Otherwise, set it somewhere in the 50-200 range.
     speckleWindowSize = 60
