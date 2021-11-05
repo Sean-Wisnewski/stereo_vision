@@ -148,12 +148,7 @@ def start_run(runtype, model=None, idx0=None, idx1=None, cal0=None, cal1=None, c
         print("Literally how did you get here")
 
 
-def add_stats_to_recorder(recorder : StatsHolder, fps, inference_time, confidences, img=None):
-    if type(fps) == list:
-        for val in fps:
-            recorder.fpss.append(val)
-    else:
-        recorder.fpss.append(fps)
+def add_stats_to_recorder(recorder : StatsHolder, inference_time, confidences, img=None):
     recorder.inference_times.append(inference_time)
     recorder.confidences.append(confidences)
     if img is not None:
@@ -171,9 +166,10 @@ def uncalibrated_run(model, idx0, class_dict, colors):
     cam = CameraCapture(idx0)
     recorder = StatsHolder()
     count = 0
+    capture_start_time = time.time()
+    frames_count = 0
     while True:
         ret, frame = cam.capture_frame_cb()
-        fps = cam.cap.get(cv2.CAP_PROP_FPS)
         start = time.time()
         as_tensor = preprocess_image(frame)
         output_dict = inference_for_single_image(model, as_tensor)
@@ -182,13 +178,18 @@ def uncalibrated_run(model, idx0, class_dict, colors):
         with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
         if count % 20 == 0:
-            add_stats_to_recorder(recorder, fps, (end-start), output_dict['detection_scores'], with_boxes)
+            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
         else:
-            add_stats_to_recorder(recorder, fps, (end-start), output_dict['detection_scores'], None)
+            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
         count += 1
+        frames_count += 1
         cv2.imshow(f"Camera {cam.idx}", frame)
         if cv2.waitKey(1) == 27:
             break
+    capture_end_time = time.time()
+    capture_time = capture_end_time - capture_start_time
+    fps = frames_count/capture_time
+    recorder.fps = fps
     cam.cap.release()
     cv2.destroyAllWindows()
     return recorder
@@ -205,26 +206,32 @@ def calibrated_run(model, idx0, cal_fname, class_dict, colors):
     cam = NanoCameraCapture(idx0, cal_fname)
     recorder = StatsHolder()
     count = 0
+    capture_start_time = time.time()
+    frames_count = 0
     while True:
         ret, frame = cam.capture_frame_cb()
         fps = cam.cap.get(cv2.CAP_PROP_FPS)
         start = time.time()
         undist = cv2.undistort(frame, cam.mtx, cam.dist, None)
-        as_tensor = preprocess_image(frame)
+        as_tensor = preprocess_image(undist)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         end = time.time()
         with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
         if count % 20 == 0:
-            add_stats_to_recorder(recorder, fps, (end-start), output_dict['detection_scores'], with_boxes)
+            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
         else:
-            add_stats_to_recorder(recorder, fps, (end-start), output_dict['detection_scores'], None)
+            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
         count += 1
         #cv2.imshow(f"Camera {cam.idx}(Calibrated)", undist)
         cv2.imshow(f"Camera {cam.idx}(Calibrated)", frame)
         if cv2.waitKey(1) == 27:
             break
+    capture_end_time = time.time()
+    capture_time = capture_end_time - capture_start_time
+    fps = frames_count/capture_time
+    recorder.fps = fps
     cam.cap.release()
     cv2.destroyAllWindows()
     return recorder
@@ -244,6 +251,8 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
     cam0 = NanoCameraCapture(idx0, cal_fname0)
     cam1 = NanoCameraCapture(idx1, cal_fname1)
     count = 0
+    capture_start_time = time.time()
+    frames_count = 0
     while True:
         ret1, frame1 = cam0.capture_frame_cb()
         ret2, frame2 = cam1.capture_frame_cb()
@@ -261,13 +270,17 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
         with_boxes = draw_bounding_boxes(dfd, output_dict, give_annotated=True, colors=colors)
         draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
         if count % 20 == 0:
-            add_stats_to_recorder(recorder, [fps0, fps1], (end-start), output_dict['detection_scores'], with_boxes)
+            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
         else:
-            add_stats_to_recorder(recorder, [fps0, fps1], (end-start), output_dict['detection_scores'], None)
+            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
         count += 1
         cv2.imshow(f"DFD Map", dfd)
         if cv2.waitKey(1) == 27:
             break
+    capture_end_time = time.time()
+    capture_time = capture_end_time - capture_start_time
+    fps = frames_count/capture_time
+    recorder.fps = fps
     cam0.cap.release()
     cam1.cap.release()
     cv2.destroyAllWindows()

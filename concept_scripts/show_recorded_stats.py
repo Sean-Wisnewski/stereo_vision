@@ -40,8 +40,9 @@ def show_imgs(df, time=1000):
 def main():
     fname = "../uncal_test.pkl"
     df = pd.read_pickle(fname)
-    summarize_stats(df)
-    show_imgs(df, time=2000)
+    stats = summarize_stats(df)
+    print(stats.to_markdown())
+    show_imgs(df, time=500)
 
 if __name__ == "__main__":
     main()
