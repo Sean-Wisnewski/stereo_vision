@@ -254,7 +254,7 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
         # "recolor" the input to get 3 dimensions, which is what MN expects
         # this is dumb, TOO BAD!
         dfd = cv2.cvtColor(dfd, cv2.COLOR_GRAY2BGR)
-        as_tensor = preprocess_image(dfd[tf.newaxis, ...])
+        as_tensor = preprocess_image(dfd)
         output_dict = inference_for_single_image(model, as_tensor)
         output_dict = filter_unconfident_predictions(output_dict, 0.4)
         end = time.time()
