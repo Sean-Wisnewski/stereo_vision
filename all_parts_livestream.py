@@ -293,7 +293,8 @@ def main():
     check_args(args)
     class_labels_dict = load_pkl_file(args.labels_fname)
     colors = load_pkl_file(args.colors_fname)
-    model = load_from_hub(args.model)
+    #model = load_from_hub(args.model)
+    model = None
 
     start_run(args.runtype, model, args.idx0, args.idx1, args.cal_file0, args.cal_file1, class_labels_dict, colors, args.output_file)
 
