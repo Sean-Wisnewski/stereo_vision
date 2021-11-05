@@ -236,7 +236,7 @@ def calibrated_run(model, idx0, cal_fname, class_dict, colors):
     cv2.destroyAllWindows()
     return recorder
 
-def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
+def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors, use_model=True):
     """
     Note: this is quite literally rectified, but with one more step to create the DFD map, then run inference on that
     :param idx0:
@@ -256,23 +256,23 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors):
     while True:
         ret1, frame1 = cam0.capture_frame_cb()
         ret2, frame2 = cam1.capture_frame_cb()
-        fps0 = cam0.cap.get(cv2.CAP_PROP_FPS)
-        fps1 = cam1.cap.get(cv2.CAP_PROP_FPS)
         start = time.time()
         dfd = make_dfd_map(frame1, frame2, cam0, cam1)
         # "recolor" the input to get 3 dimensions, which is what MN expects
         # this is dumb, TOO BAD!
         dfd = cv2.cvtColor(dfd, cv2.COLOR_GRAY2BGR)
-        as_tensor = preprocess_image(dfd)
-        output_dict = inference_for_single_image(model, as_tensor)
-        output_dict = filter_unconfident_predictions(output_dict, 0.4)
-        end = time.time()
-        with_boxes = draw_bounding_boxes(dfd, output_dict, give_annotated=True, colors=colors)
-        draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
-        if count % 20 == 0:
-            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
-        else:
-            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
+        # TEMP: using to get "good dfd results" so I don't need to use the model
+        if use_model:
+            as_tensor = preprocess_image(dfd)
+            output_dict = inference_for_single_image(model, as_tensor)
+            output_dict = filter_unconfident_predictions(output_dict, 0.4)
+            end = time.time()
+            with_boxes = draw_bounding_boxes(dfd, output_dict, give_annotated=True, colors=colors)
+            draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+            if count % 20 == 0:
+                add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
+            else:
+                add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
         count += 1
         cv2.imshow(f"DFD Map", dfd)
         if cv2.waitKey(1) == 27:
