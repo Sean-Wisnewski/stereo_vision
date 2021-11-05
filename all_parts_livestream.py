@@ -162,8 +162,8 @@ def uncalibrated_run(model, idx0, class_dict, colors):
     :param colors:
     :return:
     """
-    #cam = NanoCameraCapture(idx0)
-    cam = CameraCapture(idx0)
+    cam = NanoCameraCapture(idx0)
+    #cam = CameraCapture(idx0)
     recorder = StatsHolder()
     count = 0
     capture_start_time = time.time()
