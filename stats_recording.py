@@ -15,4 +15,4 @@ class StatsHolder:
         stats_dict = {'fps' : self.fpss, 'inf_times' : self.inference_times, 'confidences' : self.confidences,
                       'pics' : self.pics}
         df = pd.DataFrame.from_dict(stats_dict, orient='index')
-        df.to_csv(fname)
+        df.to_pickle(fname)
