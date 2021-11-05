@@ -59,9 +59,9 @@ def recolor_img(img):
 def make_stereo_matcher():
     # TODO cite
     # Matched block size. It must be an odd number >=1 . Normally, it should be somewhere in the 3..11 range.
-    block_size = 15
+    block_size = 5
     min_disp = 0
-    max_disp = 128
+    max_disp = 32
     # Maximum disparity minus minimum disparity. The value is always greater than zero.
     # In the current implementation, this parameter must be divisible by 16.
     num_disp = max_disp - min_disp
@@ -70,7 +70,7 @@ def make_stereo_matcher():
     uniquenessRatio = 5
     # Maximum size of smooth disparity regions to consider their noise speckles and invalidate.
     # Set it to 0 to disable speckle filtering. Otherwise, set it somewhere in the 50-200 range.
-    speckleWindowSize = 200
+    speckleWindowSize = 60
     # Maximum disparity variation within each connected component.
     # If you do speckle filtering, set the parameter to a positive value, it will be implicitly multiplied by 16.
     # Normally, 1 or 2 is good enough.
