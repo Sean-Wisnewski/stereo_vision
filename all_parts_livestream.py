@@ -14,7 +14,7 @@ from stats_recording import StatsHolder
 
 def make_argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('runtype', type=str, choices=["Uncalibrated", "Calibrated", "Rectified", "DFD"],
+    parser.add_argument('runtype', type=str, choices=["Uncalibrated", "Calibrated", "DFD"],
                         help="Type of run to use")
     parser.add_argument('labels_fname', type=str, help="File containing the class labels for Mobilenet")
     parser.add_argument('colors_fname', type=str, help="File containing the array of colors to use for each class in mobilenet")
@@ -137,12 +137,10 @@ def make_dfd_map(img0, img1, cam0, cam1):
 def start_run(runtype, model=None, idx0=None, idx1=None, cal0=None, cal1=None, class_dict=None, colors=None, save_fname=None):
     if runtype == "Uncalibrated":
         print("Uncal")
-        # TODO change to use whichever of idx0 or idx1 is not none
         recorder = uncalibrated_run(model, idx0, class_dict, colors)
         recorder.save_lists(save_fname)
     elif runtype == "Calibrated":
         print("Cal")
-        # TODO change to use whichever of idx0 or idx1 is not none
         recorder = calibrated_run(model, idx0, cal0, class_dict, colors)
         recorder.save_lists(save_fname)
     elif runtype == "DFD":
@@ -174,23 +172,33 @@ def uncalibrated_run(model, idx0, class_dict, colors):
     capture_start_time = time.time()
     frames_count = 0
     while True:
-        ret, frame = cam.capture_frame_cb()
-        start = time.time()
-        as_tensor = preprocess_image(frame)
-        output_dict = inference_for_single_image(model, as_tensor)
-        output_dict = filter_unconfident_predictions(output_dict, 0.4)
-        end = time.time()
-        with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
-        draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
-        if count % 20 == 0:
-            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
-        else:
-            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
-        count += 1
-        frames_count += 1
-        cv2.imshow(f"Camera {cam.idx}", frame)
-        if cv2.waitKey(1) == 27:
-            break
+        try:
+            ret, frame = cam.capture_frame_cb()
+            start = time.time()
+            as_tensor = preprocess_image(frame)
+            output_dict = inference_for_single_image(model, as_tensor)
+            output_dict = filter_unconfident_predictions(output_dict, 0.4)
+            end = time.time()
+            with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
+            draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+            if count % 10 == 0:
+                add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
+            else:
+                add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
+            count += 1
+            frames_count += 1
+            cv2.imshow(f"Camera {cam.idx}", frame)
+            if cv2.waitKey(1) == 27:
+                break
+        except KeyboardInterrupt:
+            print("in interrupt block")
+            capture_end_time = time.time()
+            capture_time = capture_end_time - capture_start_time
+            fps = frames_count / capture_time
+            recorder.fps = fps
+            cam.cap.release()
+            cv2.destroyAllWindows()
+            return recorder
     capture_end_time = time.time()
     capture_time = capture_end_time - capture_start_time
     fps = frames_count/capture_time
@@ -214,25 +222,34 @@ def calibrated_run(model, idx0, cal_fname, class_dict, colors):
     capture_start_time = time.time()
     frames_count = 0
     while True:
-        ret, frame = cam.capture_frame_cb()
-        fps = cam.cap.get(cv2.CAP_PROP_FPS)
-        start = time.time()
-        undist = cv2.undistort(frame, cam.mtx, cam.dist, None)
-        as_tensor = preprocess_image(undist)
-        output_dict = inference_for_single_image(model, as_tensor)
-        output_dict = filter_unconfident_predictions(output_dict, 0.4)
-        end = time.time()
-        with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
-        draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
-        if count % 20 == 0:
-            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
-        else:
-            add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
-        count += 1
-        #cv2.imshow(f"Camera {cam.idx}(Calibrated)", undist)
-        cv2.imshow(f"Camera {cam.idx}(Calibrated)", frame)
-        if cv2.waitKey(1) == 27:
-            break
+        try:
+            ret, frame = cam.capture_frame_cb()
+            start = time.time()
+            undist = cv2.undistort(frame, cam.mtx, cam.dist, None)
+            as_tensor = preprocess_image(undist)
+            output_dict = inference_for_single_image(model, as_tensor)
+            output_dict = filter_unconfident_predictions(output_dict, 0.4)
+            end = time.time()
+            with_boxes = draw_bounding_boxes(frame, output_dict, give_annotated=True, colors=colors)
+            draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
+            if count % 10 == 0:
+                add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
+            else:
+                add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
+            count += 1
+            #cv2.imshow(f"Camera {cam.idx}(Calibrated)", undist)
+            cv2.imshow(f"Camera {cam.idx}(Calibrated)", frame)
+            if cv2.waitKey(1) == 27:
+                break
+        except KeyboardInterrupt:
+            print("in interrupt block")
+            capture_end_time = time.time()
+            capture_time = capture_end_time - capture_start_time
+            fps = frames_count / capture_time
+            recorder.fps = fps
+            cam.cap.release()
+            cv2.destroyAllWindows()
+            return recorder
     capture_end_time = time.time()
     capture_time = capture_end_time - capture_start_time
     fps = frames_count/capture_time
@@ -277,7 +294,7 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors, use_m
                 end = time.time()
                 with_boxes = draw_bounding_boxes(dfd, output_dict, give_annotated=True, colors=colors)
                 draw_bounding_boxes_with_labels_confidence(with_boxes, output_dict, class_dict, colors=colors)
-                if count % 20 == 0:
+                if count % 10 == 0:
                     add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], with_boxes)
                 else:
                     add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
@@ -311,8 +328,7 @@ def main():
     check_args(args)
     class_labels_dict = load_pkl_file(args.labels_fname)
     colors = load_pkl_file(args.colors_fname)
-    #model = load_from_hub(args.model)
-    model = None
+    model = load_from_hub(args.model)
 
     start_run(args.runtype, model, args.idx0, args.idx1, args.cal_file0, args.cal_file1, class_labels_dict, colors, args.output_file)
 
