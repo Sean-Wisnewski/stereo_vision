@@ -143,10 +143,12 @@ def start_run(runtype, model=None, idx0=None, idx1=None, cal0=None, cal1=None, c
     elif runtype == "Calibrated":
         print("Cal")
         # TODO change to use whichever of idx0 or idx1 is not none
-        calibrated_run(model, idx0, cal0, class_dict, colors)
+        recorder = calibrated_run(model, idx0, cal0, class_dict, colors)
+        recorder.save_lists(save_fname)
     elif runtype == "DFD":
         print("DFD")
-        dfd_run(model, idx0, idx1, cal0, cal1, class_dict, colors, use_model=False)
+        recorder = dfd_run(model, idx0, idx1, cal0, cal1, class_dict, colors, use_model=False)
+        recorder.save_lists(save_fname)
     else:
         print("Literally how did you get here")
 
