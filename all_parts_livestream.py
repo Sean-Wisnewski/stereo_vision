@@ -100,7 +100,10 @@ def rectify_imgs(img0, img1, cam0, cam1, recolor=False):
     """
     TODO figure out wth is wrong with stereoRectify b/c it just don't wanna work
     :param img0:
-    :param img1:
+    :param img1GST_ARGUS: Running with following settings:
+   Camera index = 1
+   Camera mode  = 5
+:
     :param cam0:
     :param cam1:
     :param recolor:
@@ -275,8 +278,20 @@ def dfd_run(model, idx0, idx1, cal_fname0, cal_fname1, class_dict, colors, use_m
                 add_stats_to_recorder(recorder, (end-start), output_dict['detection_scores'], None)
         count += 1
         cv2.imshow(f"DFD Map", dfd)
-        if cv2.waitKey(1) == 27:
-            break
+        # this is dumb, but at least I'll always record the stats
+        # only an issue b/c of limited resources and keypresses not getting detected
+        try:
+            if cv2.waitKey(1) == 27:
+                break
+        except KeyboardInterrupt:
+            capture_end_time = time.time()
+            capture_time = capture_end_time - capture_start_time
+            fps = frames_count/capture_time
+            recorder.fps = fps
+            cam0.cap.release()
+            cam1.cap.release()
+            cv2.destroyAllWindows()
+            return recorder
     capture_end_time = time.time()
     capture_time = capture_end_time - capture_start_time
     fps = frames_count/capture_time
