@@ -32,16 +32,17 @@ def summarize_stats(df):
 def show_imgs(df, time=1000):
     imgs = df.iloc[3]
     imgs = imgs.dropna()
+    imgs = imgs[0]
     for img in imgs:
         cv2.imshow("IMG", img)
         cv2.waitKey(time)
     cv2.destroyAllWindows()
 
 def main():
-    fname = "../uncal_test.pkl"
+    fname = "../collected_data_pkls/dfd_test0.pkl"
     df = pd.read_pickle(fname)
-    stats = summarize_stats(df)
-    print(stats.to_markdown())
+    #stats = summarize_stats(df)
+    #print(stats.to_markdown())
     show_imgs(df, time=500)
 
 if __name__ == "__main__":
